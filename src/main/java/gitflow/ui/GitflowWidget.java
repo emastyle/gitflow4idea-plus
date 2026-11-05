@@ -183,23 +183,29 @@ public class GitflowWidget extends GitBranchWidget implements GitRepositoryChang
     }
 
     public void updateAsync() {
-        ApplicationManager.getApplication().invokeLater(new Runnable() {
-            @Override
-            public void run() {
+        Project project = getProject();
+        if (project == null || project.isDisposed()) {
+            return;
+        }
+
+        // Reading branches and git config runs git processes: keep it off the EDT
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            if (project.isDisposed()) {
+                return;
+            }
+            GitflowBranchUtilManager.update(project);
+            ApplicationManager.getApplication().invokeLater(() -> {
                 update();
 
                 if (myStatusBar != null){
                     myStatusBar.updateWidget(ID());
                 }
-            }
+            }, project.getDisposed());
         });
     }
 
     private void update() {
         Project project = getProject();
-
-        //repopulate the branchUtil
-        GitflowBranchUtilManager.update(project);
 
         if (project == null) {
             emptyTextAndTooltip();
@@ -217,7 +223,7 @@ public class GitflowWidget extends GitBranchWidget implements GitRepositoryChang
         popupGroup = new GitflowPopupGroup(project, false);
 
         GitflowBranchUtil gitflowBranchUtil = GitflowBranchUtilManager.getBranchUtil(repo);
-        boolean hasGitflow = gitflowBranchUtil.hasGitflow();
+        boolean hasGitflow = gitflowBranchUtil != null && gitflowBranchUtil.hasGitflow();
 
         myText = hasGitflow ? "Gitflow" : "No Gitflow";
         myTooltip = getDisplayableBranchTooltip(repo);

@@ -1,41 +1,72 @@
 plugins {
     id("java")
-    id("org.jetbrains.intellij") version "1.14.2"
+    id("org.jetbrains.intellij.platform") version "2.20.0"
 }
 
 repositories {
-    mavenLocal()
     mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
 group = "gitflow4idea-plus"
-version = "0.8.1-beta.2"
+version = "0.8.2-emastyle.2"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
+    intellijPlatform {
+        val localIdePath = providers.gradleProperty("localIdePath")
+        if (localIdePath.isPresent) {
+            local(localIdePath.get())
+        } else {
+            phpstorm("2026.2.3")
+        }
+        bundledPlugins("Git4Idea", "com.intellij.tasks", "com.intellij.modules.json")
+        pluginVerifier()
+    }
 }
 
-intellij {
-    version.set("2023.1")
-    plugins.set(listOf("Git4Idea", "tasks"))
-    updateSinceUntilBuild.set(false)
+tasks.jar {
+    from(listOf("LICENSE.txt", "README.md")) {
+        into("META-INF")
+    }
 }
 
-tasks {
-    patchPluginXml {
-        pluginId.set("Gitflow-Fix")
-        pluginDescription.set("""
+intellijPlatform {
+    pluginVerification {
+        ides {
+            current()
+        }
+    }
+    pluginConfiguration {
+        id.set("emastyle.gitflow4idea-plus")
+        description.set("""
             <H2>Git Flow Integration for Intellij</H2>
             An intelliJ plugin providing a UI layer for git-flow, which in itself is a collection of Git extensions to provide high-level repository operations for Vincent <a href="https://nvie.com/posts/a-successful-git-branching-model/">Driessen's branching model</a>
         """)
         version.set("${project.version}")
-        sinceBuild.set("231.8109.175")
+        ideaVersion {
+            sinceBuild.set("262")
+            untilBuild.set("262.*")
+        }
         changeNotes.set("""
+            <H2>Changelog for 0.8.2-emastyle.2</H2>
+            <ul>
+              <li>Fix startup UI freeze: Git Flow config is read with one git call and refreshed off the EDT.</li>
+            </ul>
+
+            <H2>Changelog for 0.8.2-emastyle.1</H2>
+            <ul>
+              <li>Build against PhpStorm 2026.2.</li>
+              <li>Preserve the configurable Git Flow start and finish options.</li>
+            </ul>
+
             <H2>Changelog for 0.8.1-beta.2</H2>
             <ul>
               <li>Support git-flow-next implementation #45</li>

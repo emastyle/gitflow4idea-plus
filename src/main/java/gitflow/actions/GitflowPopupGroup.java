@@ -1,6 +1,6 @@
 package gitflow.actions;
 
-import com.intellij.openapi.actionSystem.ActionGroup;
+import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.project.Project;
 import git4idea.GitUtil;
@@ -39,10 +39,10 @@ public class GitflowPopupGroup {
 
 
         if (gitRepositories.size() == 1){
-            ActionGroup repoActions =
+            DefaultActionGroup repoActions =
                     (new RepoActions(myProject, gitRepositories.get(0)))
                             .getRepoActionGroup(includeAdvanced);
-            actionGroup.addAll(repoActions);
+            actionGroup.addAll(repoActions.getChildren(ActionManager.getInstance()));
         }
         else{
             for (GitRepository repo : gitRepositories) {
@@ -52,7 +52,7 @@ public class GitflowPopupGroup {
         }
     }
 
-    public ActionGroup getActionGroup (){
+    public DefaultActionGroup getActionGroup (){
 
         return actionGroup;
     }

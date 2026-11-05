@@ -5,9 +5,9 @@ import com.intellij.openapi.util.Disposer;
 import git4idea.GitUtil;
 import git4idea.repo.GitRepository;
 
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class maps repos to their corresponding branch utils
@@ -15,10 +15,10 @@ import java.util.List;
  */
 
 public class GitflowBranchUtilManager {
-    private static HashMap<String, GitflowBranchUtil> repoBranchUtilMap;
+    private static final Map<String, GitflowBranchUtil> repoBranchUtilMap = new ConcurrentHashMap<>();
 
     static public GitflowBranchUtil getBranchUtil(GitRepository repo){
-        if (repo != null && repoBranchUtilMap != null) {
+        if (repo != null) {
             return repoBranchUtilMap.get(repo.getPresentableUrl());
         } else {
             return null;
@@ -29,7 +29,7 @@ public class GitflowBranchUtilManager {
         GitflowBranchUtil gitflowBranchUtil = new GitflowBranchUtil(project, repo);
         repoBranchUtilMap.put(repo.getPresentableUrl(), gitflowBranchUtil);
         // clean up
-        Disposer.register(repo, () -> repoBranchUtilMap.remove(repo));
+        Disposer.register(repo, () -> repoBranchUtilMap.remove(repo.getPresentableUrl()));
     }
 
     /**
@@ -37,10 +37,6 @@ public class GitflowBranchUtilManager {
      * @param proj
      */
     static public void update(Project proj){
-        if (repoBranchUtilMap == null){
-            repoBranchUtilMap = new HashMap<String, gitflow.GitflowBranchUtil>();
-        }
-
         List<GitRepository> gitRepositories = GitUtil.getRepositoryManager(proj).getRepositories();
         for (GitRepository repo : gitRepositories) {
             GitflowBranchUtilManager.setupBranchUtil(proj, repo);

@@ -1,19 +1,22 @@
 package gitflow;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.vcs.VcsException;
 import com.intellij.openapi.vfs.VirtualFile;
+import git4idea.GitLocalBranch;
 import git4idea.config.GitConfigUtil;
 import git4idea.repo.GitRepository;
 import gitflow.ui.NotifyUtil;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -41,20 +44,23 @@ public class GitflowConfigUtil {
     public static final String BRANCH_BUGFIX_PREFIX = "gitflow.branch.bugfix.prefix";
     public static final String BRANCH_SUPPORT_PREFIX = "gitflow.branch.support.prefix";
 
+    private static final Logger LOG = Logger.getInstance(GitflowConfigUtil.class);
+    private static final String GITFLOW_KEYS = "^gitflow\\.";
+
     private static  Map<Project, Map<String, GitflowConfigUtil>> gitflowConfigUtilMap = new HashMap<Project, Map<String, GitflowConfigUtil>>();
 
     Project project;
     GitRepository repo;
-    public String masterBranch;
-    public String developBranch;
-    public String featurePrefix;
-    public String releasePrefix;
-    public String hotfixPrefix;
-    public String bugfixPrefix;
-    public String supportPrefix;
-    public String versiontagPrefix;
+    public volatile String masterBranch;
+    public volatile String developBranch;
+    public volatile String featurePrefix;
+    public volatile String releasePrefix;
+    public volatile String hotfixPrefix;
+    public volatile String bugfixPrefix;
+    public volatile String supportPrefix;
+    public volatile String versiontagPrefix;
 
-    public static GitflowConfigUtil getInstance(@NotNull Project project_, @NotNull GitRepository repo_)
+    public static synchronized GitflowConfigUtil getInstance(@NotNull Project project_, @NotNull GitRepository repo_)
     {
         GitflowConfigUtil instance;
         if (gitflowConfigUtilMap.containsKey(project_) && gitflowConfigUtilMap.get(project_).containsKey(repo_.getPresentableUrl())) {
@@ -81,111 +87,49 @@ public class GitflowConfigUtil {
         update();
     }
 
-    /**
-     * Detects git-flow-next branch names by scanning all local branches.
-     * Looks for branches with type=base in git config.
-     * Uses the parent field to distinguish: production (no parent) vs develop (has parent).
-     */
-    private void detectGitflowNextBranches() {
-        VirtualFile root = repo.getRoot();
-
-        try {
-            String developCandidate = null;
-            String productionCandidate = null;
-
-            // Get all local branches and check their git config
-            java.util.Collection<git4idea.GitLocalBranch> localBranches = repo.getBranches().getLocalBranches();
-
-            for (git4idea.GitLocalBranch branch : localBranches) {
-                String branchName = branch.getName();
-                String type = GitConfigUtil.getValue(project, root, "gitflow.branch." + branchName + ".type");
-
-                if ("base".equals(type)) {
-                    String parent = GitConfigUtil.getValue(project, root, "gitflow.branch." + branchName + ".parent");
-
-                    if (parent == null || parent.isEmpty()) {
-                        // This is production branch (no parent)
-                        productionCandidate = branchName;
-                    } else {
-                        // This is develop branch (has parent)
-                        developCandidate = branchName;
-                        // Also get production from parent if not found yet
-                        if (productionCandidate == null) {
-                            productionCandidate = parent;
-                        }
-                    }
-                }
-
-                // If we found both, we can stop
-                if (productionCandidate != null && developCandidate != null) {
-                    break;
-                }
+    public void update(){
+        if (ApplicationManager.getApplication().isDispatchThread()) {
+            try {
+                ApplicationManager.getApplication().executeOnPooledThread(this::load).get();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException e) {
+                LOG.warn(e);
             }
-
-            // Set the values
-            masterBranch = productionCandidate;
-            developBranch = developCandidate;
-
-        } catch (Exception e) {
-            // On error, mark as not initialized
-            masterBranch = null;
-            developBranch = null;
+        } else {
+            load();
         }
     }
 
-    public void update(){
-        VirtualFile root = repo.getRoot();
-
-        try{
-            Future<?> f = ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                try {
-                    // Try to detect git-flow-next branches first
-                    detectGitflowNextBranches();
-
-                    // If detection didn't find branches, try old AVH format
-                    if (masterBranch == null || developBranch == null) {
-                        masterBranch = GitConfigUtil.getValue(project, root, BRANCH_MASTER);
-                        developBranch = GitConfigUtil.getValue(project, root, BRANCH_DEVELOP);
-                    }
-
-                    // Prefixes: try old format first, then new format
-                    featurePrefix = GitConfigUtil.getValue(project, root, PREFIX_FEATURE);
-                    if (featurePrefix == null) {
-                        featurePrefix = GitConfigUtil.getValue(project, root, BRANCH_FEATURE_PREFIX);
-                    }
-
-                    releasePrefix = GitConfigUtil.getValue(project, root, PREFIX_RELEASE);
-                    if (releasePrefix == null) {
-                        releasePrefix = GitConfigUtil.getValue(project, root, BRANCH_RELEASE_PREFIX);
-                    }
-
-                    hotfixPrefix = GitConfigUtil.getValue(project, root, PREFIX_HOTFIX);
-                    if (hotfixPrefix == null) {
-                        hotfixPrefix = GitConfigUtil.getValue(project, root, BRANCH_HOTFIX_PREFIX);
-                    }
-
-                    bugfixPrefix = GitConfigUtil.getValue(project, root, PREFIX_BUGFIX);
-                    if (bugfixPrefix == null) {
-                        bugfixPrefix = GitConfigUtil.getValue(project, root, BRANCH_BUGFIX_PREFIX);
-                    }
-
-                    supportPrefix = GitConfigUtil.getValue(project, root, PREFIX_SUPPORT);
-                    if (supportPrefix == null) {
-                        supportPrefix = GitConfigUtil.getValue(project, root, BRANCH_SUPPORT_PREFIX);
-                    }
-
-                    versiontagPrefix = GitConfigUtil.getValue(project, root, PREFIX_VERSIONTAG);
-                } catch (VcsException e) {
-                    NotifyUtil.notifyError(project, "Config error", e);
+    // One `git config --get-regexp` call: per-branch reads spawned a git process for every local branch.
+    private void load() {
+        Map<String, String> config = new HashMap<>();
+        try {
+            for (Map.Entry<String, List<String>> entry : GitConfigUtil.getValues(project, repo.getRoot(), GITFLOW_KEYS).entrySet()) {
+                List<String> values = entry.getValue();
+                if (values != null && !values.isEmpty()) {
+                    config.put(entry.getKey(), values.get(values.size() - 1));
                 }
-            });
-            f.get();
-
-        }  catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
+            }
+        } catch (VcsException e) {
+            // git exits with 1 when no key matches, i.e. the repository has no gitflow config
+            LOG.debug(e);
         }
+
+        List<String> localBranchNames = new ArrayList<>();
+        for (GitLocalBranch branch : repo.getBranches().getLocalBranches()) {
+            localBranchNames.add(branch.getName());
+        }
+
+        GitflowConfigValues values = GitflowConfigValues.from(config, localBranchNames);
+        masterBranch = values.masterBranch;
+        developBranch = values.developBranch;
+        featurePrefix = values.featurePrefix;
+        releasePrefix = values.releasePrefix;
+        hotfixPrefix = values.hotfixPrefix;
+        bugfixPrefix = values.bugfixPrefix;
+        supportPrefix = values.supportPrefix;
+        versiontagPrefix = values.versiontagPrefix;
     }
 
 

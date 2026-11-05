@@ -44,6 +44,10 @@ public abstract class GitflowAction extends DumbAwareAction {
 
     @Override
     public void actionPerformed(AnActionEvent e) {
+        initializeAction(e);
+    }
+
+    protected void initializeAction(AnActionEvent e) {
         Project project = IDEAUtils.getActiveProject();
 
         // if repo isn't set explicitly, such as in the case of starting from keyboard shortcut, infer it

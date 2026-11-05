@@ -34,7 +34,11 @@ public class FinishReleaseAction extends AbstractBranchAction {
 
     @Override
     public void actionPerformed(AnActionEvent e) {
-        super.actionPerformed(e);
+        finishRelease(e);
+    }
+
+    private void finishRelease(AnActionEvent e) {
+        initializeAction(e);
 
         GitflowFinishActionAckDialog ackDialog = new GitflowFinishActionAckDialog(myProject);
         ackDialog.show();
@@ -113,7 +117,7 @@ public class FinishReleaseAction extends AbstractBranchAction {
                             if (errorLineHandler.hasMergeError){
                                 if (handleMerge(myProject)) {
                                     FinishReleaseAction completeFinisReleaseAction = new FinishReleaseAction(releaseName, tagMessage);
-                                    completeFinisReleaseAction.actionPerformed(event);
+                                    completeFinisReleaseAction.finishRelease(event);
                                 }
                             }
                         }

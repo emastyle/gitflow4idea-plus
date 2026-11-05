@@ -1,6 +1,7 @@
 package gitflow;
 
 import com.intellij.openapi.actionSystem.ActionGroup;
+import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
@@ -27,6 +28,6 @@ public class GitflowMenu extends ActionGroup {
 
         GitflowPopupGroup popupGroup = new GitflowPopupGroup(project, true);
 
-        return popupGroup.getActionGroup().getChildren(anActionEvent);
+        return popupGroup.getActionGroup().getChildren(ActionManager.getInstance());
     }
 }
