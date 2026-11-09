@@ -104,7 +104,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceInterface="gitflow.Gitflow" serviceImplementation="gitflow.GitflowImpl"/>
         <applicationService serviceImplementation="gitflow.GitflowState"/>
-        <projectConfigurable instance="gitflow.GitflowConfigurable"/>
+        <projectConfigurable instance="gitflow.GitflowConfigurable" displayName="Gitflow"/>
         <tasks.dialogPanelProvider implementation="gitflow.ui.GitflowTaskDialogPanelProvider"/>
         <statusBarWidgetFactory id="gitflowWidget" implementation="gitflow.ui.GitflowStatusBarWidgetFactory" order="after inspectionProfileWidget"/>
         <notificationGroup  id="Gitflow Errors WINDOW" displayType="TOOL_WINDOW" toolWindowId="Version Control" isLogByDefault="true"/>

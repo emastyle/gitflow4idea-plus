@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.platform.gradle.tasks.InstrumentCodeTask
+
 plugins {
     id("java")
     id("org.jetbrains.intellij.platform") version "2.20.0"
@@ -11,7 +13,7 @@ repositories {
 }
 
 group = "gitflow4idea-plus"
-version = "0.8.2-emastyle.2"
+version = "0.8.2-emastyle.3"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_25
@@ -38,6 +40,11 @@ tasks.jar {
     }
 }
 
+tasks.named<InstrumentCodeTask>("instrumentCode") {
+    // Incremental instrumentation duplicates generated helpers in unchanged form classes.
+    outputs.upToDateWhen { false }
+}
+
 intellijPlatform {
     pluginVerification {
         ides {
@@ -56,6 +63,12 @@ intellijPlatform {
             untilBuild.set("262.*")
         }
         changeNotes.set("""
+            <H2>Changelog for 0.8.2-emastyle.3</H2>
+            <ul>
+              <li>Declare the Gitflow settings display name to prevent an exception when opening Settings.</li>
+              <li>Start form instrumentation from original classes to prevent duplicate dialog methods in incremental builds.</li>
+            </ul>
+
             <H2>Changelog for 0.8.2-emastyle.2</H2>
             <ul>
               <li>Fix startup UI freeze: Git Flow config is read with one git call and refreshed off the EDT.</li>
