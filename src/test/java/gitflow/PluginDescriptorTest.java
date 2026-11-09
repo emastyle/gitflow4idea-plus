@@ -13,6 +13,21 @@ import static org.junit.Assert.fail;
 
 public class PluginDescriptorTest {
     @Test
+    public void declaresTaskPlatformDependency() throws Exception {
+        try (InputStream descriptor = getClass().getResourceAsStream("/META-INF/plugin.xml")) {
+            assertNotNull(descriptor);
+            NodeList dependencies = DocumentBuilderFactory.newInstance()
+                    .newDocumentBuilder().parse(descriptor).getElementsByTagName("depends");
+            for (int i = 0; i < dependencies.getLength(); i++) {
+                if ("com.intellij.platform.tasks".equals(dependencies.item(i).getTextContent().trim())) {
+                    return;
+                }
+            }
+            fail("Missing PhpStorm 2026.3 task platform dependency");
+        }
+    }
+
+    @Test
     public void settingsPageDeclaresDisplayNameWithoutLoadingConfigurable() throws Exception {
         try (InputStream descriptor = getClass().getResourceAsStream("/META-INF/plugin.xml")) {
             assertNotNull(descriptor);

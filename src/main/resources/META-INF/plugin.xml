@@ -9,6 +9,7 @@
 
     <depends>com.intellij.modules.vcs</depends>
     <depends>com.intellij.tasks</depends>
+    <depends>com.intellij.platform.tasks</depends>
     <depends>Git4Idea</depends>
     <depends>com.intellij.modules.json</depends>
 

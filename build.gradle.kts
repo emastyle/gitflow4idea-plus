@@ -13,7 +13,7 @@ repositories {
 }
 
 group = "gitflow4idea-plus"
-version = "0.8.2-emastyle.3"
+version = "0.8.2-emastyle.4"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_25
@@ -27,7 +27,7 @@ dependencies {
         if (localIdePath.isPresent) {
             local(localIdePath.get())
         } else {
-            phpstorm("2026.2.3")
+            error("Specify -PlocalIdePath=<path to PhpStorm 2026.3> to build against the supported IDE.")
         }
         bundledPlugins("Git4Idea", "com.intellij.tasks", "com.intellij.modules.json")
         pluginVerifier()
@@ -59,10 +59,15 @@ intellijPlatform {
         """)
         version.set("${project.version}")
         ideaVersion {
-            sinceBuild.set("262")
-            untilBuild.set("262.*")
+            sinceBuild.set("263")
+            untilBuild.set("263.*")
         }
         changeNotes.set("""
+            <H2>Changelog for 0.8.2-emastyle.4</H2>
+            <ul>
+              <li>Support PhpStorm 2026.3 and its task platform modules.</li>
+            </ul>
+
             <H2>Changelog for 0.8.2-emastyle.3</H2>
             <ul>
               <li>Declare the Gitflow settings display name to prevent an exception when opening Settings.</li>

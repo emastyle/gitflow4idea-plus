@@ -1,11 +1,12 @@
 # Git Flow Integration Plus for Intellij
 
-## emastyle fork: PhpStorm 2026.2
+## emastyle fork: PhpStorm 2026.3
 
-This fork targets PhpStorm 2026.2 (build family `262`) and preserves the
+This version targets PhpStorm 2026.3 (build family `263`) and preserves the
 original Gitflow options page. Disable other Gitflow plugins, including the
 original Git Flow Integration Plus, before installing this fork: their action
 IDs and services overlap.
+For PhpStorm 2026.2, use the earlier `0.8.2-emastyle.3` distribution.
 
 In **Settings > Gitflow > Release**, enable **Keep Remote** to preserve published
 release branches after finish. **Keep Local** controls local branch retention
@@ -17,14 +18,14 @@ add Gitflow Pilot's remote-release validation. With AVH, an existing local
 release still blocks another release. Other CLI implementations can impose
 different checks; disabling fetch does not disable their validation.
 
-Build with JDK 25 (the runtime bundled with PhpStorm 2026.2 can be used):
+Build with JDK 25 (the runtime bundled with PhpStorm 2026.3 can be used):
 
 ```bash
 export JAVA_HOME=/Applications/PhpStorm.app/Contents/jbr/Contents/Home
 bash ./gradlew -PlocalIdePath=/Applications/PhpStorm.app buildPlugin test verifyPlugin
 ```
 
-Without `localIdePath`, Gradle downloads PhpStorm 2026.2.3. Install the ZIP from
+Set `localIdePath` to your installed PhpStorm 2026.3. Install the ZIP from
 `build/distributions/` using **Settings > Plugins > Install Plugin from Disk**.
 The fork has a distinct plugin ID, `emastyle.gitflow4idea-plus`.
 The release regression tests use temporary local repositories and a local bare
