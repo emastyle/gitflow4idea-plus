@@ -1,13 +1,10 @@
 package gitflow;
 
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Disposer;
 import git4idea.GitUtil;
 import git4idea.repo.GitRepository;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class maps repos to their corresponding branch utils
@@ -15,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 
 public class GitflowBranchUtilManager {
-    private static final Map<String, GitflowBranchUtil> repoBranchUtilMap = new ConcurrentHashMap<>();
+    private static final RepoScopedCache<GitflowBranchUtil> repoBranchUtilMap = new RepoScopedCache<>();
 
     static public GitflowBranchUtil getBranchUtil(GitRepository repo){
         if (repo != null) {
@@ -26,10 +23,11 @@ public class GitflowBranchUtilManager {
     }
 
     static public void setupBranchUtil(Project project, GitRepository repo){
+        if (project.isDisposed() || repo.isDisposed()) {
+            return;
+        }
         GitflowBranchUtil gitflowBranchUtil = new GitflowBranchUtil(project, repo);
-        repoBranchUtilMap.put(repo.getPresentableUrl(), gitflowBranchUtil);
-        // clean up
-        Disposer.register(repo, () -> repoBranchUtilMap.remove(repo.getPresentableUrl()));
+        repoBranchUtilMap.put(repo, repo.getPresentableUrl(), gitflowBranchUtil);
     }
 
     /**

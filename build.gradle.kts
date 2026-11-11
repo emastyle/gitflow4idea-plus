@@ -13,7 +13,7 @@ repositories {
 }
 
 group = "gitflow4idea-plus"
-version = "0.8.2-emastyle.4"
+version = "0.8.2-emastyle.5"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_25
@@ -63,6 +63,10 @@ intellijPlatform {
             untilBuild.set("263.*")
         }
         changeNotes.set("""
+            <H2>Changelog for 0.8.2-emastyle.5</H2>
+            <ul>
+              <li>Fix "parent has already been disposed" error when a Git repository is closed during a widget refresh</li>
+            </ul>
             <H2>Changelog for 0.8.2-emastyle.4</H2>
             <ul>
               <li>Support PhpStorm 2026.3 and its task platform modules.</li>

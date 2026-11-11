@@ -18,16 +18,17 @@ public class GitflowVersionTester {
 
 	private static final Map<Project, GitflowVersionTester> testers = new ConcurrentHashMap<>();
 
-	public static GitflowVersionTester forProject(@NotNull Project project) {
-		return testers.computeIfAbsent(
-			project,
-			p -> {
-				if(!p.isDisposed()) {
-					Disposer.register(p, () -> testers.remove(p));
-				}
-				return new GitflowVersionTester(ApplicationManager.getApplication().getService(Gitflow.class), p);
+	public static synchronized GitflowVersionTester forProject(@NotNull Project project) {
+		GitflowVersionTester tester = testers.get(project);
+		if (tester == null) {
+			tester = new GitflowVersionTester(ApplicationManager.getApplication().getService(Gitflow.class), project);
+			testers.put(project, tester);
+			GitflowVersionTester registeredTester = tester;
+			if (!Disposer.tryRegister(project, () -> testers.remove(project, registeredTester))) {
+				testers.remove(project, tester);
 			}
-		);
+		}
+		return tester;
 	}
 
 	@NotNull private final Gitflow gitflow;

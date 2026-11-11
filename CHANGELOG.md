@@ -3,6 +3,12 @@
 Changes specific to the emastyle fork. Earlier upstream release notes are
 available in the plugin's change notes.
 
+## 0.8.2-emastyle.5
+
+- Fix the "parent has already been disposed" error raised when a Git
+  repository is closed while the Gitflow widget refreshes.
+- Register repository cleanup only once instead of on every refresh.
+
 ## 0.8.2-emastyle.4
 
 - Support PhpStorm 2026.3 (build 263), including its task platform dependency.

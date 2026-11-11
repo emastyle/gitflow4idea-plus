@@ -5,7 +5,6 @@ import java.util.concurrent.ExecutionException;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.vcs.VcsException;
 import com.intellij.openapi.vfs.VirtualFile;
 import git4idea.GitLocalBranch;
@@ -47,7 +46,7 @@ public class GitflowConfigUtil {
     private static final Logger LOG = Logger.getInstance(GitflowConfigUtil.class);
     private static final String GITFLOW_KEYS = "^gitflow\\.";
 
-    private static  Map<Project, Map<String, GitflowConfigUtil>> gitflowConfigUtilMap = new HashMap<Project, Map<String, GitflowConfigUtil>>();
+    private static final RepoScopedCache<GitflowConfigUtil> gitflowConfigUtilMap = new RepoScopedCache<>();
 
     Project project;
     GitRepository repo;
@@ -62,21 +61,12 @@ public class GitflowConfigUtil {
 
     public static synchronized GitflowConfigUtil getInstance(@NotNull Project project_, @NotNull GitRepository repo_)
     {
-        GitflowConfigUtil instance;
-        if (gitflowConfigUtilMap.containsKey(project_) && gitflowConfigUtilMap.get(project_).containsKey(repo_.getPresentableUrl())) {
-            instance = gitflowConfigUtilMap.get(project_).get(repo_.getPresentableUrl());
-        } else {
-            Map<String, GitflowConfigUtil> innerMap = new HashMap<String, GitflowConfigUtil>();
+        String key = project_.getLocationHash() + "|" + repo_.getPresentableUrl();
+        GitflowConfigUtil instance = gitflowConfigUtilMap.get(key);
+        if (instance == null || instance.repo != repo_) {
             instance = new GitflowConfigUtil(project_, repo_);
-
-            gitflowConfigUtilMap.put(project_, innerMap);
-            innerMap.put(repo_.getPresentableUrl(), instance);
-
-            //cleanup
-            Disposer.register(repo_, () -> innerMap.remove(repo_));
-            Disposer.register(project_, () -> gitflowConfigUtilMap.remove(project_));
+            gitflowConfigUtilMap.put(repo_, key, instance);
         }
-
         return instance;
     }
 
